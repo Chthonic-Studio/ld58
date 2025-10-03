@@ -4,7 +4,9 @@ A 2D incremental strategy–puzzle game about cultivating synergistic growth und
 ---
 
 ## 1. High Concept
-Place and combine specialized biomechanical tiles on a grid to generate resources via emergent synergies. Over time, Blight spreads—disrupting or disabling tiles—forcing adaptive restructuring. The core tension: optimize a living engine of mutually amplifying parts before entropy overwhelms it.
+Place and combine specialized biomechanical tiles on a grid to generate resources via emergent synergies. Over time, Blight spreads—disrupting or disabling tiles—forcing adaptive restructuring. The core tension: optimize a living engine of mutually amplifying parts before entropy overwhelms it. While you do so, the tiles generate power/income and the higher their level and optimization, the more income they produce, but the more vulnerable it makes your structure. Upgrading tiles costs income, and moving, reestructuring, destroying tiles costs income. The game gets segmented into levels, and you have to reach the level goal of income to have a You Win and progress to the next level. 
+
+### The theme of the game is Collector
 
 ---
 
@@ -13,7 +15,8 @@ Place and combine specialized biomechanical tiles on a grid to generate resource
 2. Tactical Spatial Economy: Placement order and adjacency matter as much as cost curves.  
 3. Pressure via Entropy: Blight escalates complexity and decision urgency.  
 4. Clean Modularity: Every system is decoupled via signals for rapid content iteration.  
-5. Transparency & Learnability: Players can inspect why outputs occur (planned synergy visualizations).  
+5. Transparency & Learnability: Players can inspect why outputs occur (planned synergy visualizations).
+6. Resource Managemente: You have to manage your income tightly 
 
 ---
 
