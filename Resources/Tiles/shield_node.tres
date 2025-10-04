@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="Tile_Data" load_steps=3 format=3 uid="uid://c6tv8frnrr0xl"]
+
+[ext_resource type="Script" uid="uid://b7lrcpl2d8tl4" path="res://Scripts/tile_data.gd" id="1_iiijl"]
+[ext_resource type="Texture2D" uid="uid://4xv7ag7w05ot" path="res://icon.svg" id="2_eysym"]
+
+[resource]
+script = ExtResource("1_iiijl")
+id = &"shield_node"
+display_name = "Shield Node"
+category = &"shield"
+cost = {
+"biomass": 75
+}
+texture = ExtResource("2_eysym")
+description = "Reduces the effect of negative synergies on adjacent tiles."
+tags = Array[StringName]([&"shield_strength:0.5"])
+is_defensive = true
+metadata/_custom_type_script = "uid://b7lrcpl2d8tl4"

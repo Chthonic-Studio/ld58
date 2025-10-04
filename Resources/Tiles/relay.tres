@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="Tile_Data" load_steps=3 format=3 uid="uid://bf0pumfotlyc7"]
+
+[ext_resource type="Script" uid="uid://b7lrcpl2d8tl4" path="res://Scripts/tile_data.gd" id="1_abcde"]
+[ext_resource type="Texture2D" uid="uid://4xv7ag7w05ot" path="res://icon.svg" id="2_fghij"]
+
+[resource]
+script = ExtResource("1_abcde")
+id = &"relay"
+display_name = "Relay"
+category = &"relay"
+cost = {
+"biomass": 20.0,
+"energy": 10.0
+}
+texture = ExtResource("2_fghij")
+description = "Amplifies the effects of adjacent tiles. Has no inherent generation."

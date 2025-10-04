@@ -68,6 +68,11 @@ func place_tile(pos: Vector2i, tile_data: Tile_Data) -> bool:
 	tile_placed.emit(pos, tile_data)
 	
 	_recalculate_generation()
+	# When placing a tile, we must also recalculate neighbors since their synergies might change.
+	for dir in neighbor_dirs:
+		if grid.has(pos + dir):
+			_recalculate_generation()
+			break
 	return true
 
 
@@ -112,6 +117,24 @@ func _compute_tile_generation(pos: Vector2i, inst: Dictionary) -> Dictionary:
 	if inst.disabled: return {}
 	var td: Tile_Data = inst.tile_data
 	var output: Dictionary = td.base_generation.duplicate()
+
+	# --- CHANGE: Calculate shield strength from neighbors FIRST ---
+	var total_shield_strength: float = 0.0
+	for dir in neighbor_dirs:
+		var neighbor_pos = pos + dir
+		if not grid.has(neighbor_pos): continue
+		
+		var neighbor_inst = grid[neighbor_pos]
+		if neighbor_inst.disabled: continue
+		
+		var neighbor_td: Tile_Data = neighbor_inst.tile_data
+		for tag in neighbor_td.tags:
+			if tag.begins_with("shield_strength:"):
+				var strength_str = tag.split(":")[1]
+				if strength_str.is_valid_float():
+					total_shield_strength += strength_str.to_float()
+
+	# Apply synergy rules from neighbors
 	for dir in neighbor_dirs:
 		var neighbor_pos := pos + dir
 		if not grid.has(neighbor_pos): continue
@@ -120,10 +143,11 @@ func _compute_tile_generation(pos: Vector2i, inst: Dictionary) -> Dictionary:
 		var neighbor_td: Tile_Data = neighbor_inst.tile_data
 		if td.synergy_rules.has(neighbor_td.category):
 			var rule: Dictionary = td.synergy_rules[neighbor_td.category]
-			_apply_synergy_rule(output, rule, neighbor_td)
+			# --- CHANGE: Pass the calculated shield strength to the rule application ---
+			_apply_synergy_rule(output, rule, neighbor_td, total_shield_strength)
 	return output
 
-func _apply_synergy_rule(output: Dictionary, rule: Dictionary, neighbor_data: Tile_Data) -> void:
+func _apply_synergy_rule(output: Dictionary, rule: Dictionary, neighbor_data: Tile_Data, shield_strength: float = 0.0) -> void:
 	match rule.get("type", ""):
 		"additive":
 			var res: StringName = rule.get("resource", &"")
@@ -132,6 +156,15 @@ func _apply_synergy_rule(output: Dictionary, rule: Dictionary, neighbor_data: Ti
 			var target: StringName = rule.get("target", &"")
 			if target != &"" and output.has(target): output[target] *= rule.get("factor", 1.0)
 		"penalty":
-			for key in output: output[key] *= rule.get("factor", 1.0)
+			# --- CHANGE: Shield Node logic is applied here ---
+			var factor = rule.get("factor", 1.0)
+			# If shields are present, they reduce the penalty's effect.
+			# A shield_strength of 1.0 would completely negate the penalty.
+			if shield_strength > 0.0:
+				var penalty_amount = 1.0 - factor
+				var effective_penalty = penalty_amount * (1.0 - clampf(shield_strength, 0.0, 1.0))
+				factor = 1.0 - effective_penalty
+			
+			for key in output: output[key] *= factor
 		_:
 			pass

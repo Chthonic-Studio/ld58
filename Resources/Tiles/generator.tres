@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="Tile_Data" load_steps=3 format=3 uid="uid://bxyvnmkj3hgfe"]
+
+[ext_resource type="Script" uid="uid://b7lrcpl2d8tl4" path="res://Scripts/tile_data.gd" id="1_abcde"]
+[ext_resource type="Texture2D" uid="uid://4xv7ag7w05ot" path="res://icon.svg" id="2_fghij"]
+
+[resource]
+script = ExtResource("1_abcde")
+id = &"generator"
+display_name = "Generator"
+category = &"generator"
+cost = {
+"biomass": 20.0
+}
+base_generation = {
+"energy": 2.0
+}
+texture = ExtResource("2_fghij")
+description = "Generates Energy. Boosted by Harvesters and amplified by Relays."
