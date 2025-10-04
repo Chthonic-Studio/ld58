@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="Tile_Data" load_steps=3 format=3 uid="uid://ony5gfrjhyo"]
+
+[ext_resource type="Script" uid="uid://b7lrcpl2d8tl4" path="res://Scripts/tile_data.gd" id="1_ybtjp"]
+[ext_resource type="Texture2D" uid="uid://4xv7ag7w05ot" path="res://icon.svg" id="2_8pk1t"]
+
+[resource]
+script = ExtResource("1_ybtjp")
+id = &"purifier"
+display_name = "Purifier"
+category = &"purifier"
+texture = ExtResource("2_8pk1t")
+description = "Creates a zone around itself that prevents the Blight from spreading"
+tags = Array[StringName]([&"radius:1"])
+is_defensive = true
+metadata/_custom_type_script = "uid://b7lrcpl2d8tl4"

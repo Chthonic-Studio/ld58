@@ -1,0 +1,27 @@
+[gd_scene load_steps=7 format=3 uid="uid://mjljiiitnmha"]
+
+[ext_resource type="PackedScene" uid="uid://cyov2j2kueuxs" path="res://Scenes/UI/main_ui.tscn" id="1_jjgbg"]
+[ext_resource type="PackedScene" uid="uid://dm13jmlsi1b3n" path="res://Scenes/game_manager.tscn" id="1_jjvhh"]
+[ext_resource type="PackedScene" uid="uid://t4p5shl51pek" path="res://Scenes/grid_manager.tscn" id="2_kry3j"]
+[ext_resource type="PackedScene" uid="uid://btr64ok6s14sx" path="res://Scenes/tile.tscn" id="3_kry3j"]
+[ext_resource type="Script" uid="uid://btnpx33hjewxb" path="res://Scripts/placement_controller.gd" id="4_21xkr"]
+[ext_resource type="Script" uid="uid://2thtbv4ik0oj" path="res://Scripts/blight_manager.gd" id="6_21xkr"]
+
+[node name="Main" type="Node2D"]
+
+[node name="GameManager" parent="." instance=ExtResource("1_jjvhh")]
+
+[node name="GridManager" parent="." instance=ExtResource("2_kry3j")]
+tile_scene = ExtResource("3_kry3j")
+
+[node name="MainUI" parent="." instance=ExtResource("1_jjgbg")]
+
+[node name="PlacementController" type="Node" parent="."]
+script = ExtResource("4_21xkr")
+
+[node name="BlightManager" type="Node" parent="."]
+script = ExtResource("6_21xkr")
+
+[node name="SpawnTimer" type="Timer" parent="BlightManager"]
+
+[node name="SpreadTimer" type="Timer" parent="BlightManager"]

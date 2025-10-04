@@ -1,4 +1,7 @@
-[gd_scene format=3 uid="uid://cyov2j2kueuxs"]
+[gd_scene load_steps=3 format=3 uid="uid://cyov2j2kueuxs"]
+
+[ext_resource type="Script" uid="uid://4wqr56b3pqax" path="res://Scripts/main_ui.gd" id="1_ikpc8"]
+[ext_resource type="Script" uid="uid://cfbiigj2aojbk" path="res://Scripts/build_panel.gd" id="2_xltjf"]
 
 [node name="MainUI" type="Control"]
 layout_mode = 3
@@ -7,3 +10,17 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_ikpc8")
+
+[node name="ResourceLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 909.0
+offset_top = 32.0
+offset_right = 1089.0
+offset_bottom = 74.0
+
+[node name="BuildPanel" type="VBoxContainer" parent="."]
+layout_mode = 1
+offset_right = 180.0
+offset_bottom = 359.0
+script = ExtResource("2_xltjf")
