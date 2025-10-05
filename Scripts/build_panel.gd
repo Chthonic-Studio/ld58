@@ -28,18 +28,12 @@ func _populate_build_buttons() -> void:
 	all_tiles.sort_custom(func(a, b): return a.display_name < b.display_name)
 	
 	for tile_data in all_tiles:
+		# --- CHANGE: Skip any tile that is marked as unbuildable ---
+		if tile_data.tags.has(&"unbuildable"):
+			continue
+
 		# For each tile, create a new button.
 		var button := Button.new()
-		button.text = "%s (Cost: %s)" % [tile_data.display_name, tile_data.cost]
-		
-		# Connect the button's "pressed" signal to a handler function.
-		# We use .bind() to pass the specific tile_data for this button to the handler.
-		button.pressed.connect(_on_tile_button_pressed.bind(tile_data))
-		
-		# Add the newly created button as a child of this container.
-		add_child(button)
-
-
 # --- Signal Handlers ---
 
 # This function is called when any of the dynamically created tile buttons are pressed.

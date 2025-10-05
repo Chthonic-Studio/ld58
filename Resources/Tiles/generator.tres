@@ -14,5 +14,17 @@ cost = {
 base_generation = {
 "energy": 2.0
 }
+synergy_rules = {
+"harvester": {
+"type": "additive",
+"resource": "energy",
+"value": 1.5
+},
+"relay": {
+"type": "multiplier",
+"target": "energy",
+"factor": 1.25
+}
+}
 texture = ExtResource("2_fghij")
 description = "Generates Energy. Boosted by Harvesters and amplified by Relays."

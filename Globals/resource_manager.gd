@@ -15,9 +15,12 @@ signal resources_spent(cost: Dictionary)
 
 # The dictionary holding the current amount of each resource the player has.
 # Keys are resource StringNames (e.g., &"biomass"), values are floats.
+# The dictionary holding the current amount of each resource the player has.
+# Keys are resource StringNames (e.g., &"biomass"), values are floats.
 var current_resources: Dictionary = {
 	&"biomass": 100.0, # Starting with some initial resources for testing.
-	&"energy": 25.0
+	&"energy": 25.0,
+	&"nutrients": 0.0  
 }
 
 

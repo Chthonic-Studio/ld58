@@ -20,6 +20,7 @@ signal generation_recalculated(total_generation: Dictionary, per_tile_generation
 # --- PROPERTIES ---
 var grid: Dictionary = {}
 var neighbor_dirs: Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]
+var core_pos: Vector2i # NEW: Keep a reference to the Core's position
 
 
 # --- GODOT ENGINE FUNCTIONS ---
@@ -30,6 +31,7 @@ func _ready() -> void:
 	else:
 		push_warning("GridManager could not find BlightManager. Blight will not function.")
 
+	call_deferred("_place_initial_core")
 
 func _draw() -> void:
 	var grid_width_pixels = grid_dimensions.x * cell_size.x
@@ -98,6 +100,35 @@ func set_tile_disabled(pos: Vector2i, is_disabled: bool) -> void:
 
 	_recalculate_generation()
 
+func attempt_upgrade_core(pos: Vector2i) -> void:
+	if not grid.has(pos) or not grid[pos].tile_data.tags.has(&"core_tile"):
+		return
+
+	var tile_instance = grid[pos]
+	var td: Tile_Data = tile_instance.tile_data
+	var current_level = td.metadata.get("upgrade_level", 0)
+	var upgrade_path: Array = td.metadata.get("upgrade_path", [])
+
+	if current_level >= upgrade_path.size():
+		print("Core is already max level.")
+		return
+
+	var next_upgrade = upgrade_path[current_level]
+	var upgrade_cost = next_upgrade.get("cost", {})
+
+	if ResourceManager.spend_resources(upgrade_cost):
+		print("Upgrading Core to level %d" % (current_level + 1))
+		td.metadata["upgrade_level"] = current_level + 1
+		
+		# Apply the generation bonus
+		var bonus = next_upgrade.get("generation_bonus", {})
+		for resource_key in bonus:
+			td.base_generation[resource_key] = td.base_generation.get(resource_key, 0.0) + bonus[resource_key]
+		
+		_recalculate_generation()
+	else:
+		print("Cannot afford Core upgrade.")
+
 
 # --- PRIVATE LOGIC ---
 # ... (The rest of the private functions are unchanged and correct)
@@ -118,21 +149,28 @@ func _compute_tile_generation(pos: Vector2i, inst: Dictionary) -> Dictionary:
 	var td: Tile_Data = inst.tile_data
 	var output: Dictionary = td.base_generation.duplicate()
 
-	# --- CHANGE: Calculate shield strength from neighbors FIRST ---
+	# --- CHANGE: Calculate shield strength and check for adjacent Blight ---
 	var total_shield_strength: float = 0.0
+	var is_adjacent_to_blight: bool = false
+	
 	for dir in neighbor_dirs:
 		var neighbor_pos = pos + dir
 		if not grid.has(neighbor_pos): continue
 		
 		var neighbor_inst = grid[neighbor_pos]
-		if neighbor_inst.disabled: continue
 		
-		var neighbor_td: Tile_Data = neighbor_inst.tile_data
-		for tag in neighbor_td.tags:
-			if tag.begins_with("shield_strength:"):
-				var strength_str = tag.split(":")[1]
-				if strength_str.is_valid_float():
-					total_shield_strength += strength_str.to_float()
+		# Check if the neighbor is a blighted tile
+		if neighbor_inst.disabled:
+			is_adjacent_to_blight = true
+		
+		# If the neighbor is NOT disabled, check if it provides a shield
+		if not neighbor_inst.disabled:
+			var neighbor_td: Tile_Data = neighbor_inst.tile_data
+			for tag in neighbor_td.tags:
+				if tag.begins_with("shield_strength:"):
+					var strength_str = tag.split(":")[1]
+					if strength_str.is_valid_float():
+						total_shield_strength += strength_str.to_float()
 
 	# Apply synergy rules from neighbors
 	for dir in neighbor_dirs:
@@ -143,10 +181,31 @@ func _compute_tile_generation(pos: Vector2i, inst: Dictionary) -> Dictionary:
 		var neighbor_td: Tile_Data = neighbor_inst.tile_data
 		if td.synergy_rules.has(neighbor_td.category):
 			var rule: Dictionary = td.synergy_rules[neighbor_td.category]
-			# --- CHANGE: Pass the calculated shield strength to the rule application ---
 			_apply_synergy_rule(output, rule, neighbor_td, total_shield_strength)
+	
+	# --- NEW: Apply the Blight penalty at the end ---
+	# This happens after all positive synergies have been calculated.
+	if is_adjacent_to_blight:
+		# We define the penalty rule directly here.
+		# This makes it a universal game rule, not tile-specific data.
+		var blight_penalty_rule: Dictionary = {
+			"type": "penalty",
+			"factor": 0.5 # Halves the output
+		}
+		_apply_synergy_rule(output, blight_penalty_rule, null, total_shield_strength)
+
 	return output
 
+# --- NEW: Places the Core at the center of the grid ---
+func _place_initial_core() -> void:
+	var core_data: Tile_Data = ResourceCatalog.tiles.get(&"core")
+	if not core_data:
+		push_error("GridManager: Could not find 'core' TileData in ResourceCatalog!")
+		return
+	
+	core_pos = grid_dimensions / 2
+	place_tile(core_pos, core_data)
+	
 func _apply_synergy_rule(output: Dictionary, rule: Dictionary, neighbor_data: Tile_Data, shield_strength: float = 0.0) -> void:
 	match rule.get("type", ""):
 		"additive":

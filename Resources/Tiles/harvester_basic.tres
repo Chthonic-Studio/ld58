@@ -8,5 +8,16 @@ script = ExtResource("1_nti80")
 id = &"harvester_basic"
 display_name = "Harvester"
 category = &"harvester"
+cost = {
+"biomass": 10.0
+}
+base_generation = {
+"biomass": 1.0
+}
+synergy_rules = {}
 texture = ExtResource("2_q2xnl")
+description = "Generates a steady supply of Biomass. The foundation of any network."
+tags = Array[StringName]([])
+is_defensive = false
 metadata/_custom_type_script = "uid://b7lrcpl2d8tl4"
+

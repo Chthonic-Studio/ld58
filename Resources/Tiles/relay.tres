@@ -12,5 +12,9 @@ cost = {
 "biomass": 20.0,
 "energy": 10.0
 }
+base_generation = {}
+synergy_rules = {}
 texture = ExtResource("2_fghij")
 description = "Amplifies the effects of adjacent tiles. Has no inherent generation."
+tags = Array[StringName]([])
+is_defensive = false

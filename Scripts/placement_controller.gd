@@ -24,18 +24,22 @@ func _ready() -> void:
 	_main_ui.tile_to_build_selected.connect(_on_main_ui_tile_to_build_selected)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _selected_tile_data == null:
-		return
-
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.is_pressed():
-		# REASON FOR CHANGE: This now correctly asks the GridManager to convert
-		# the mouse position into a grid coordinate.
 		var grid_pos: Vector2i = _grid_manager.world_to_grid_coords(event.position)
 		
-		if _grid_manager.place_tile(grid_pos, _selected_tile_data):
-			ResourceManager.spend_resources(_selected_tile_data.cost)
+		# If we have a tile selected for building, try to place it.
+		if _selected_tile_data != null:
+			if _grid_manager.place_tile(grid_pos, _selected_tile_data):
+				ResourceManager.spend_resources(_selected_tile_data.cost)
+			# Deselect after attempting to place, successful or not.
 			_selected_tile_data = null
-			
+		
+		# --- NEW: If no tile is selected for building, check for interaction ---
+		else:
+			# Check if the clicked tile is the Core
+			if _grid_manager.grid.has(grid_pos) and _grid_manager.grid[grid_pos].tile_data.tags.has(&"core_tile"):
+				_grid_manager.attempt_upgrade_core(grid_pos)
+				
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.is_pressed():
 		_selected_tile_data = null
 		print("Build selection cancelled.")

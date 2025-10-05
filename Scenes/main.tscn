@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://mjljiiitnmha"]
+[gd_scene load_steps=8 format=3 uid="uid://mjljiiitnmha"]
 
 [ext_resource type="PackedScene" uid="uid://cyov2j2kueuxs" path="res://Scenes/UI/main_ui.tscn" id="1_jjgbg"]
 [ext_resource type="PackedScene" uid="uid://dm13jmlsi1b3n" path="res://Scenes/game_manager.tscn" id="1_jjvhh"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://btr64ok6s14sx" path="res://Scenes/tile.tscn" id="3_kry3j"]
 [ext_resource type="Script" uid="uid://btnpx33hjewxb" path="res://Scripts/placement_controller.gd" id="4_21xkr"]
 [ext_resource type="Script" uid="uid://2thtbv4ik0oj" path="res://Scripts/blight_manager.gd" id="6_21xkr"]
+[ext_resource type="Script" uid="uid://x3ebd63qbogj" path="res://Scripts/synergy_visualizer.gd" id="7_6bp64"]
 
 [node name="Main" type="Node2D"]
 
@@ -25,3 +26,7 @@ script = ExtResource("6_21xkr")
 [node name="SpawnTimer" type="Timer" parent="BlightManager"]
 
 [node name="SpreadTimer" type="Timer" parent="BlightManager"]
+
+[node name="Node2D" type="Node2D" parent="." node_paths=PackedStringArray("_grid_manager")]
+script = ExtResource("7_6bp64")
+_grid_manager = NodePath("../GridManager")

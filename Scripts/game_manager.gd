@@ -2,8 +2,19 @@
 # This node acts as the "heartbeat" of the game, triggering the core logic on a set interval.
 extends Node
 
+signal game_over(final_score: int)
+
 ## The time in seconds between each game tick.
 @export var tick_rate: float = 1.0
+
+@export_group("Scoring")
+@export var biomass_weight: float = 1.0
+@export var energy_weight: float = 2.5
+@export var nutrients_weight: float = 5.0
+@export var time_multiplier: float = 0.1 # Score bonus per second survived
+
+var _is_game_over: bool = false
+var _time_survived: float = 0.0
 
 # A dictionary holding the total resource generation per tick for the entire grid.
 # This is updated by the GridManager.
@@ -11,6 +22,8 @@ var _total_generation: Dictionary = {}
 
 # --- Node References ---
 @onready var tick_timer: Timer = $TickTimer
+@export var _blight_manager: BlightManager
+@export var grid_manager : GridManager
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -18,7 +31,6 @@ func _ready() -> void:
 	# This script should be placed on a "GameManager" node in your main scene.
 	# That node must have a child Timer node named "TickTimer".
 	# The GridManager must also be a child of the scene so it can be found.
-	var grid_manager = get_node("../GridManager") # Adjust path if needed
 	if not grid_manager:
 		push_error("GameManager could not find GridManager node!")
 		return
@@ -47,3 +59,33 @@ func _on_tick_timer_timeout() -> void:
 # It caches the result locally, ready for the next game tick.
 func _on_grid_manager_generation_recalculated(total_generation: Dictionary, _per_tile_generation: Dictionary) -> void:
 	_total_generation = total_generation
+	
+func _on_tile_blighted(pos: Vector2i) -> void:
+	if _is_game_over:
+		return
+	
+	if is_instance_valid(grid_manager) and pos == grid_manager.core_pos:
+		_end_game()
+		
+# --- PRIVATE FUNCTIONS ---
+func _end_game() -> void:
+	print("GAME OVER! The Core has been blighted.")
+	_is_game_over = true
+	
+	# Stop all game timers
+	tick_timer.stop()
+	if is_instance_valid(_blight_manager):
+		_blight_manager.get_node("SpawnTimer").stop()
+		_blight_manager.get_node("SpreadTimer").stop()
+	
+	# Calculate score
+	var resource_score = 0.0
+	resource_score += ResourceManager.current_resources.get(&"biomass", 0.0) * biomass_weight
+	resource_score += ResourceManager.current_resources.get(&"energy", 0.0) * energy_weight
+	resource_score += ResourceManager.current_resources.get(&"nutrients", 0.0) * nutrients_weight
+	
+	var time_bonus = 1.0 + (_time_survived * time_multiplier)
+	var final_score = int(resource_score * time_bonus)
+	
+	print("Final Score: %d" % final_score)
+	game_over.emit(final_score)

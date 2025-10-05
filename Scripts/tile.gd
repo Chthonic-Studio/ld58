@@ -6,6 +6,7 @@ extends Node2D
 
 # Emitted when this tile is clicked, sending its grid position.
 signal tile_clicked(pos: Vector2i)
+@onready var input_area: Area2D = $InputArea
 
 # The grid position of this tile. Set by the GridManager upon placement.
 var grid_position: Vector2i
@@ -24,3 +25,10 @@ func initialize(pos: Vector2i, data: Tile_Data) -> void:
 	var sprite: Sprite2D = $Sprite2D
 	if sprite:
 		sprite.texture = tile_data.texture
+	
+	# --- NEW: Connect the input event signal from the Area2D ---
+	input_area.input_event.connect(_on_input_event)
+
+func _on_input_event(_viewport, event: InputEvent, _shape_idx):
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.is_pressed():
+		tile_clicked.emit(grid_position)

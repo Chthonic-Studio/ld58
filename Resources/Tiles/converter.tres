@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="Tile_Data" load_steps=3 format=3 uid="uid://d1x07hg5rcm0u"]
+
+[ext_resource type="Script" uid="uid://b7lrcpl2d8tl4" path="res://Scripts/tile_data.gd" id="1_abcde"]
+[ext_resource type="Texture2D" uid="uid://4xv7ag7w05ot" path="res://icon.svg" id="2_fghij"]
+
+[resource]
+script = ExtResource("1_abcde")
+id = &"converter"
+display_name = "Converter"
+category = &"converter"
+cost = {
+"biomass": 100.0,
+"energy": 50.0
+}
+base_generation = {
+"energy": -4.0,
+"nutrients": 1.0
+}
+synergy_rules = {
+"relay": {
+"factor": 1.5,
+"target": "nutrients",
+"type": "multiplier"
+}
+}
+texture = ExtResource("2_fghij")
+description = "Consumes Energy to produce Nutrients. More efficient when amplified by a Relay."
+metadata/_custom_type_script = "uid://b7lrcpl2d8tl4"

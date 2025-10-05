@@ -1,7 +1,10 @@
-[gd_scene load_steps=3 format=3 uid="uid://btr64ok6s14sx"]
+[gd_scene load_steps=4 format=3 uid="uid://btr64ok6s14sx"]
 
 [ext_resource type="Script" uid="uid://btayjt58q8xu" path="res://Scripts/tile.gd" id="1_abcde"]
 [ext_resource type="Texture2D" uid="uid://4xv7ag7w05ot" path="res://icon.svg" id="2_rvq8p"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_rvq8p"]
+size = Vector2(59, 60)
 
 [node name="Tile" type="Node2D"]
 script = ExtResource("1_abcde")
@@ -9,3 +12,9 @@ script = ExtResource("1_abcde")
 [node name="Sprite2D" type="Sprite2D" parent="."]
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("2_rvq8p")
+
+[node name="InputArea" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="InputArea"]
+position = Vector2(0.5, 0)
+shape = SubResource("RectangleShape2D_rvq8p")

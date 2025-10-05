@@ -51,15 +51,29 @@ func _ready() -> void:
 
 # --- SPREAD/SPAWN LOGIC ---
 func _on_spawn_timer_timeout() -> void:
+	# --- CHANGE: This logic is now much more specific ---
 	var valid_targets: Array[Vector2i]
+	var all_placeable_tiles: Array[Vector2i]
+
 	for pos in _grid_manager.grid:
-		if not _blighted_cells.has(pos) and not _protected_cells.has(pos):
-			valid_targets.append(pos)
+		# We're interested in all tiles that are not the Core
+		if not _grid_manager.grid[pos].tile_data.tags.has(&"core_tile"):
+			all_placeable_tiles.append(pos)
+			# A valid target is a non-core tile that is not yet blighted or protected
+			if not _blighted_cells.has(pos) and not _protected_cells.has(pos):
+				valid_targets.append(pos)
 	
-	if valid_targets.is_empty():
+	var target_pos: Vector2i
+	# If there are still non-core tiles to blight, pick one.
+	if not valid_targets.is_empty():
+		target_pos = valid_targets.pick_random()
+	# Else, if all non-core tiles are blighted, the ONLY target left is the Core.
+	elif all_placeable_tiles.size() == _blighted_cells.size() and _grid_manager.grid.has(_grid_manager.core_pos):
+		target_pos = _grid_manager.core_pos
+	# Otherwise, do nothing.
+	else:
 		return
 	
-	var target_pos: Vector2i = valid_targets.pick_random()
 	_blight_cell(target_pos)
 
 
