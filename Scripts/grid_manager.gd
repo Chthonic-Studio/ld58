@@ -15,12 +15,14 @@ extends Node2D
 signal tile_placed(pos: Vector2i, tile_data: Tile_Data)
 signal tile_removed(pos: Vector2i)
 signal generation_recalculated(total_generation: Dictionary, per_tile_generation: Dictionary)
+# --- NEW: A definitive signal that the game is over due to blight. ---
+signal all_tiles_blighted
 
 
 # --- PROPERTIES ---
 var grid: Dictionary = {}
 var neighbor_dirs: Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]
-var core_pos: Vector2i # NEW: Keep a reference to the Core's position
+var core_pos: Vector2i
 
 
 # --- GODOT ENGINE FUNCTIONS ---
@@ -63,19 +65,15 @@ func place_tile(pos: Vector2i, tile_data: Tile_Data) -> bool:
 		tile_instance.position = (pos * cell_size) + (cell_size / 2)
 		tile_instance.initialize(pos, tile_data)
 		
-		# --- FIX: Connect to the newly created tile's click signal ---
-		# The GridManager should listen for clicks on the tiles it creates.
 		tile_instance.tile_clicked.connect(_on_any_tile_clicked)
 		
 		grid[pos].node_instance = tile_instance
 	else:
 		push_warning("GridManager: tile_scene is not set! Cannot create visual tile.")
 	
-	# The GridManager's only job is to announce what was placed and where.
 	tile_placed.emit(pos, tile_data)
 	
 	_recalculate_generation()
-	# When placing a tile, we must also recalculate neighbors since their synergies might change.
 	for dir in neighbor_dirs:
 		if grid.has(pos + dir):
 			_recalculate_generation()
@@ -104,6 +102,10 @@ func set_tile_disabled(pos: Vector2i, is_disabled: bool) -> void:
 		tile_node.modulate = Color.DARK_GRAY if is_disabled else Color.WHITE
 
 	_recalculate_generation()
+	
+	# --- CHANGE: Check for game over condition AFTER disabling the tile. ---
+	_check_for_blight_game_over()
+
 
 func attempt_upgrade_core(pos: Vector2i) -> void:
 	if not grid.has(pos) or not grid[pos].tile_data.tags.has(&"core_tile"):
@@ -125,7 +127,6 @@ func attempt_upgrade_core(pos: Vector2i) -> void:
 		print("Upgrading Core to level %d" % (current_level + 1))
 		td.metadata["upgrade_level"] = current_level + 1
 		
-		# Apply the generation bonus
 		var bonus = next_upgrade.get("generation_bonus", {})
 		for resource_key in bonus:
 			td.base_generation[resource_key] = td.base_generation.get(resource_key, 0.0) + bonus[resource_key]
@@ -136,7 +137,6 @@ func attempt_upgrade_core(pos: Vector2i) -> void:
 
 
 # --- PRIVATE LOGIC ---
-# ... (The rest of the private functions are unchanged and correct)
 func _recalculate_generation() -> void:
 	var total_generation := {}
 	var per_tile_generation := {}
@@ -154,7 +154,6 @@ func _compute_tile_generation(pos: Vector2i, inst: Dictionary) -> Dictionary:
 	var td: Tile_Data = inst.tile_data
 	var output: Dictionary = td.base_generation.duplicate()
 
-	# --- CHANGE: Calculate shield strength and check for adjacent Blight ---
 	var total_shield_strength: float = 0.0
 	var is_adjacent_to_blight: bool = false
 	
@@ -164,11 +163,9 @@ func _compute_tile_generation(pos: Vector2i, inst: Dictionary) -> Dictionary:
 		
 		var neighbor_inst = grid[neighbor_pos]
 		
-		# Check if the neighbor is a blighted tile
 		if neighbor_inst.disabled:
 			is_adjacent_to_blight = true
 		
-		# If the neighbor is NOT disabled, check if it provides a shield
 		if not neighbor_inst.disabled:
 			var neighbor_td: Tile_Data = neighbor_inst.tile_data
 			for tag in neighbor_td.tags:
@@ -177,7 +174,6 @@ func _compute_tile_generation(pos: Vector2i, inst: Dictionary) -> Dictionary:
 					if strength_str.is_valid_float():
 						total_shield_strength += strength_str.to_float()
 
-	# Apply synergy rules from neighbors
 	for dir in neighbor_dirs:
 		var neighbor_pos := pos + dir
 		if not grid.has(neighbor_pos): continue
@@ -188,20 +184,15 @@ func _compute_tile_generation(pos: Vector2i, inst: Dictionary) -> Dictionary:
 			var rule: Dictionary = td.synergy_rules[neighbor_td.category]
 			_apply_synergy_rule(output, rule, neighbor_td, total_shield_strength)
 	
-	# --- NEW: Apply the Blight penalty at the end ---
-	# This happens after all positive synergies have been calculated.
 	if is_adjacent_to_blight:
-		# We define the penalty rule directly here.
-		# This makes it a universal game rule, not tile-specific data.
 		var blight_penalty_rule: Dictionary = {
 			"type": "penalty",
-			"factor": 0.5 # Halves the output
+			"factor": 0.5 
 		}
 		_apply_synergy_rule(output, blight_penalty_rule, null, total_shield_strength)
 
 	return output
 
-# --- NEW: Places the Core at the center of the grid ---
 func _place_initial_core() -> void:
 	var core_data: Tile_Data = ResourceCatalog.tiles.get(&"core")
 	if not core_data:
@@ -220,10 +211,7 @@ func _apply_synergy_rule(output: Dictionary, rule: Dictionary, neighbor_data: Ti
 			var target: StringName = rule.get("target", &"")
 			if target != &"" and output.has(target): output[target] *= rule.get("factor", 1.0)
 		"penalty":
-			# --- CHANGE: Shield Node logic is applied here ---
 			var factor = rule.get("factor", 1.0)
-			# If shields are present, they reduce the penalty's effect.
-			# A shield_strength of 1.0 would completely negate the penalty.
 			if shield_strength > 0.0:
 				var penalty_amount = 1.0 - factor
 				var effective_penalty = penalty_amount * (1.0 - clampf(shield_strength, 0.0, 1.0))
@@ -233,14 +221,23 @@ func _apply_synergy_rule(output: Dictionary, rule: Dictionary, neighbor_data: Ti
 		_:
 			pass
 
-# --- NEW SIGNAL HANDLER ---
-# This function is called when ANY tile on the grid is clicked.
 func _on_any_tile_clicked(pos: Vector2i) -> void:
-	# Check if the clicked tile is the Core and attempt to upgrade it.
 	if grid.has(pos) and grid[pos].tile_data.tags.has(&"core_tile"):
 		attempt_upgrade_core(pos)
+
+
+# --- NEW: This function now lives in the GridManager, the source of truth. ---
+func _check_for_blight_game_over() -> void:
+	# Iterate through all tiles.
+	for pos in grid:
+		var tile = grid[pos]
+		# If we find any tile that is NOT the Core and is NOT disabled...
+		if not tile.tile_data.tags.has(&"core_tile") and not tile.disabled:
+			# ...then the game is not over yet. We can stop checking.
+			return
 	
-	# Future interactions with other tiles could be added here.
-	# For example:
-	# elif grid.has(pos) and grid[pos].tile_data.category == &"some_other_interactive_tile":
-	#     _do_something_else(pos)
+	# If the loop completes, it means no active, non-Core tiles were found.
+	# We must also check that there is more than just the Core tile on the board.
+	# Otherwise, the game would end immediately when only the Core exists.
+	if grid.size() > 1:
+		all_tiles_blighted.emit()

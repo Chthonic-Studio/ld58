@@ -1,28 +1,17 @@
-[gd_resource type="Resource" script_class="Tile_Data" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="Tile_Data" load_steps=3 format=3 uid="uid://dx4gckjm2rh11"]
 
-[ext_resource type="Script" path="res://Scripts/tile_data.gd" id="1_abcde"]
-[ext_resource type="Texture2D" path="res://icon.svg" id="2_fghij"]
+[ext_resource type="Script" uid="uid://b7lrcpl2d8tl4" path="res://Scripts/tile_data.gd" id="1_abcde"]
+[ext_resource type="Texture2D" uid="uid://4xv7ag7w05ot" path="res://icon.svg" id="2_fghij"]
 
 [resource]
 script = ExtResource("1_abcde")
 id = &"core"
 display_name = "The Core"
 category = &"core"
-cost = {}
 base_generation = {
 "biomass": 1.0
 }
-synergy_rules = {}
 texture = ExtResource("2_fghij")
 description = "The heart of your network. Generates a steady supply of Biomass. Click to upgrade."
 tags = Array[StringName]([&"unbuildable", &"core_tile"])
-is_defensive = false
-# --- NEW: Upgrade data is stored directly in the resource ---
-metadata = {
-"upgrade_level": 0,
-"upgrade_path": [
-	{"cost": {"biomass": 100}, "generation_bonus": {"biomass": 2.0}},
-	{"cost": {"biomass": 250}, "generation_bonus": {"biomass": 3.0}},
-	{"cost": {"energy": 150}, "generation_bonus": {"biomass": 5.0}}
-]
-}
+metadata/_custom_type_script = "uid://b7lrcpl2d8tl4"

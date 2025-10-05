@@ -4,84 +4,104 @@
 class_name SynergyVisualizer
 extends Node2D
 
-# --- EXPORTS & CONFIGURATION ---
-@export var line_color: Color = Color.CYAN
-@export var line_width: float = 2.0
+# --- PRELOADS & EXPORTS ---
+# How to use:
+# 1. Replace the old SynergyVisualizer script content with this.
+# 2. Create the `synergy_link.tscn` scene as specified.
+# 3. Drag `synergy_link.tscn` from the FileSystem dock into the `Synergy Link Scene`
+#    export property in the Inspector for the SynergyVisualizer node.
+
+## The scene for a single synergy link line.
+@export var synergy_link_scene: PackedScene
 
 # --- NODE REFERENCES ---
 var _grid_manager: GridManager
 
 # --- PROPERTIES ---
-# An array to store pairs of grid positions that have a synergy.
-var _synergy_links: Array[Array] = []
+# A pool of Line2D nodes to reuse for drawing links. This is more
+# efficient than creating/destroying nodes constantly.
+var _link_pool: Array[Line2D] = []
+var _active_links: int = 0
+
 
 # --- GODOT ENGINE FUNCTIONS ---
 func _ready() -> void:
-	# --- How to use: ---
-	# 1. Create a new script at `Scripts/synergy_visualizer.gd` and paste this content.
-	# 2. In the `main.tscn` scene, add a new `Node2D` named `SynergyVisualizer`.
-	# 3. Attach this script to the `SynergyVisualizer` node.
+	# --- FIX: Ensure this node draws on top of the tiles. ---
+	# The default z_index is 0, the same as the tiles. By setting it higher,
+	# we guarantee that any children of this node (the Line2D links) will
+	# be rendered after, and thus on top of, the tile sprites.
+	self.z_index = 10
 	
-	_grid_manager = get_node("../GridManager") # Adjust path if needed
+	_grid_manager = get_node("../GridManager")
 	if not _grid_manager:
 		push_error("SynergyVisualizer could not find GridManager node!")
 		return
 	
-	# Connect to the signal that tells us the grid's output has been recalculated.
-	# This is the perfect time to check for new synergy links.
-	_grid_manager.generation_recalculated.connect(_on_generation_recalculated)
-	
-	# We also need to clear the lines if a tile is removed.
-	_grid_manager.tile_removed.connect(func(_pos): queue_redraw())
-
-
-func _draw() -> void:
-	# This function is called automatically by the engine whenever queue_redraw() is called.
-	# It iterates through all the stored links and draws them.
-	if not is_instance_valid(_grid_manager):
+	if not synergy_link_scene:
+		push_error("SynergyVisualizer is missing the Synergy Link Scene!")
 		return
-		
-	for link in _synergy_links:
-		# --- CORRECTION ---
-		# Replaced the incorrect call to map_to_local with manual coordinate calculation.
-		# This logic now correctly mirrors how the GridManager itself places tile nodes.
-		# We take the grid coordinate, multiply by the cell size to get the top-left
-		# corner, and then add half the cell size to find the center.
-		var start_pos: Vector2 = (link[0] * _grid_manager.cell_size) + (_grid_manager.cell_size / 2)
-		var end_pos: Vector2 = (link[1] * _grid_manager.cell_size) + (_grid_manager.cell_size / 2)
-		draw_line(start_pos, end_pos, line_color, line_width, true)
+	
+	# Connect to the signals that tell us when to redraw the links.
+	_grid_manager.generation_recalculated.connect(_on_generation_recalculated)
+	_grid_manager.tile_removed.connect(_on_generation_recalculated.bind({}, {}))
 
 
 # --- SIGNAL HANDLERS ---
 func _on_generation_recalculated(_total_generation: Dictionary, _per_tile_generation: Dictionary) -> void:
+	# This function is now the single point of update for the visuals.
 	_update_synergy_links()
-	queue_redraw() # Tell Godot to call _draw() on the next frame.
 
 
 # --- PRIVATE FUNCTIONS ---
+# This function redraws all synergy links based on the current grid state.
 func _update_synergy_links() -> void:
-	_synergy_links.clear()
+	# Hide all currently active links before redrawing.
+	for i in range(_active_links):
+		_link_pool[i].visible = false
+	_active_links = 0
 	
 	if not is_instance_valid(_grid_manager) or _grid_manager.grid.is_empty():
 		return
 
-	# We must iterate through every tile and check its neighbors for synergies.
+	# Iterate through every tile and check its neighbors for synergies.
 	for pos in _grid_manager.grid:
-		var tile_instance = _grid_manager.grid[pos]
-		var tile_data: Tile_Data = tile_instance.tile_data
-		
-		# If this tile has no rules, it can't initiate a synergy.
+		# Skip disabled tiles, as they shouldn't show active synergies.
+		if _grid_manager.grid[pos].disabled:
+			continue
+			
+		var tile_data: Tile_Data = _grid_manager.grid[pos].tile_data
 		if tile_data.synergy_rules.is_empty():
 			continue
 			
 		for dir in _grid_manager.neighbor_dirs:
 			var neighbor_pos = pos + dir
 			
-			# Check if neighbor exists and has a category that our tile reacts to.
-			if _grid_manager.grid.has(neighbor_pos):
-				var neighbor_instance = _grid_manager.grid[neighbor_pos]
-				var neighbor_data: Tile_Data = neighbor_instance.tile_data
+			# Check if a valid, non-disabled neighbor exists that our tile reacts to.
+			if _grid_manager.grid.has(neighbor_pos) and not _grid_manager.grid[neighbor_pos].disabled:
+				var neighbor_data: Tile_Data = _grid_manager.grid[neighbor_pos].tile_data
 				
 				if tile_data.synergy_rules.has(neighbor_data.category):
-					# A synergy exists! Add the link.
-					_synergy_links.append([pos, neighbor_pos])
+					# A synergy exists! Draw the link.
+					var start_world_pos = (pos * _grid_manager.cell_size) + (_grid_manager.cell_size / 2)
+					var end_world_pos = (neighbor_pos * _grid_manager.cell_size) + (_grid_manager.cell_size / 2)
+					_draw_link(start_world_pos, end_world_pos)
+
+
+# Draws a single link between two points using a Line2D from the pool.
+func _draw_link(start_pos: Vector2, end_pos: Vector2) -> void:
+	var link_node: Line2D
+	
+	# Do we have an available node in our pool?
+	if _active_links < _link_pool.size():
+		link_node = _link_pool[_active_links]
+	else:
+		# If not, create a new one and add it to the pool.
+		if not synergy_link_scene: return
+		link_node = synergy_link_scene.instantiate()
+		add_child(link_node)
+		_link_pool.append(link_node)
+	
+	# Configure the Line2D node and make it visible.
+	link_node.points = [start_pos, end_pos]
+	link_node.visible = true
+	_active_links += 1

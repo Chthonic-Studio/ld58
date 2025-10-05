@@ -77,15 +77,9 @@ func _on_spawn_timer_timeout() -> void:
 		else:
 			target_pos = valid_non_core_targets.pick_random()
 			
-	# ELSE: If there are NO valid non-core targets left...
+	# --- CHANGE: If there are no valid non-core targets, do nothing. The Core is immune. ---
 	else:
-		# ...check if the Core itself is still alive. If so, it's the final target.
-		var core_pos = _grid_manager.core_pos
-		if _grid_manager.grid.has(core_pos) and not _blighted_cells.has(core_pos):
-			target_pos = core_pos
-		# If there are no non-core targets AND the core is already blighted or gone, do nothing.
-		else:
-			return
+		return
 
 	_blight_cell(target_pos)
 
@@ -99,9 +93,11 @@ func _on_spread_timer_timeout() -> void:
 		for dir in _neighbor_dirs:
 			var neighbor_pos = blighted_pos + dir
 			
-			if _grid_manager.grid.has(neighbor_pos) and not _blighted_cells.has(neighbor_pos) and not _protected_cells.has(neighbor_pos):
-				if not frontier.has(neighbor_pos):
-					frontier.append(neighbor_pos)
+			# --- CHANGE: Added check to ensure Core tile is not added to the frontier ---
+			if _grid_manager.grid.has(neighbor_pos) and not _grid_manager.grid[neighbor_pos].tile_data.tags.has(&"core_tile"):
+				if not _blighted_cells.has(neighbor_pos) and not _protected_cells.has(neighbor_pos):
+					if not frontier.has(neighbor_pos):
+						frontier.append(neighbor_pos)
 
 	if frontier.is_empty():
 		return

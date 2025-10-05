@@ -1,0 +1,20 @@
+[gd_scene load_steps=4 format=3 uid="uid://cde123abc456"]
+
+[ext_resource type="Shader" uid="uid://2ktb4jxijyet" path="res://Assets/Shaders/synergy_link.gdshader" id="1_abcde"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_xyz123"]
+shader = ExtResource("1_abcde")
+shader_parameter/glow_color = Color(0.5, 1, 1, 1)
+shader_parameter/pulse_speed = 0.6590000313025
+shader_parameter/pulse_width = 0.4400000209
+shader_parameter/intensity = 3.238000153805
+
+[sub_resource type="Gradient" id="Gradient_qwert"]
+offsets = PackedFloat32Array(0, 0.5, 1)
+colors = PackedColorArray(0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0)
+
+[node name="SynergyLink" type="Line2D"]
+material = SubResource("ShaderMaterial_xyz123")
+width = 4.0
+gradient = SubResource("Gradient_qwert")
+antialiased = true

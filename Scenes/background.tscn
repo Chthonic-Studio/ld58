@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3 uid="uid://b1i2xbyh3v123"]
+
+[ext_resource type="Shader" uid="uid://bkwmrcirsadg8" path="res://Assets/Shaders/scrolling_grid.gdshader" id="1_abcde"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_xyz123"]
+shader = ExtResource("1_abcde")
+shader_parameter/background_color = Color(0.01, 0.02, 0.05, 1)
+shader_parameter/grid_color = Color(0.1, 0.5, 0.8, 1)
+shader_parameter/speed = 0.0210000009975
+shader_parameter/fov = 2.0
+shader_parameter/line_sharpness = 0.0050000002375
+
+[node name="Background" type="TextureRect"]
+material = SubResource("ShaderMaterial_xyz123")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2

@@ -1,6 +1,6 @@
 # Orchestrates the main game loop and coordinates the different manager singletons.
 # This node acts as the "heartbeat" of the game, triggering the core logic on a set interval.
-extends Node
+class_name GameManager extends Node
 
 signal game_over(final_score: int)
 
@@ -34,9 +34,16 @@ func _ready() -> void:
 	if not grid_manager:
 		push_error("GameManager could not find GridManager node!")
 		return
+	if not _blight_manager:
+		push_error("GameManager could not find BlightManager node!")
+		return
 		
 	# Connect to the GridManager's signal to receive updated generation values.
 	grid_manager.generation_recalculated.connect(_on_grid_manager_generation_recalculated)
+	
+	# --- CHANGE: Connect to the definitive game-over signals ---
+	grid_manager.all_tiles_blighted.connect(_on_all_tiles_blighted)
+	_blight_manager.tile_blighted.connect(_on_tile_blighted)
 	
 	# Connect the timer's timeout signal to the main tick function.
 	tick_timer.wait_time = tick_rate
@@ -60,16 +67,26 @@ func _on_tick_timer_timeout() -> void:
 func _on_grid_manager_generation_recalculated(total_generation: Dictionary, _per_tile_generation: Dictionary) -> void:
 	_total_generation = total_generation
 	
+# This handler now ONLY checks for the Core being blighted, as a fail-safe.
 func _on_tile_blighted(pos: Vector2i) -> void:
 	if _is_game_over:
 		return
 	
 	if is_instance_valid(grid_manager) and pos == grid_manager.core_pos:
-		_end_game()
+		_end_game("The Core has been blighted.")
+
+# --- NEW: This handler listens for the GridManager's definitive signal. ---
+func _on_all_tiles_blighted() -> void:
+	if _is_game_over:
+		return
+	_end_game("The network has been fully consumed by the Blight.")
 		
 # --- PRIVATE FUNCTIONS ---
-func _end_game() -> void:
-	print("GAME OVER! The Core has been blighted.")
+func _end_game(reason: String) -> void:
+	if _is_game_over:
+		return
+		
+	print("GAME OVER! %s" % reason)
 	_is_game_over = true
 	
 	# Stop all game timers
