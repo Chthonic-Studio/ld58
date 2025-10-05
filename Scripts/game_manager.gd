@@ -1,6 +1,7 @@
 # Orchestrates the main game loop and coordinates the different manager singletons.
 # This node acts as the "heartbeat" of the game, triggering the core logic on a set interval.
-class_name GameManager extends Node
+class_name GameManager
+extends Node
 
 signal game_over(final_score: int)
 
@@ -30,7 +31,7 @@ func _ready() -> void:
 	# How to use:
 	# This script should be placed on a "GameManager" node in your main scene.
 	# That node must have a child Timer node named "TickTimer".
-	# The GridManager must also be a child of the scene so it can be found.
+	# The GridManager and BlightManager must also be assigned in the Inspector.
 	if not grid_manager:
 		push_error("GameManager could not find GridManager node!")
 		return
@@ -41,15 +42,22 @@ func _ready() -> void:
 	# Connect to the GridManager's signal to receive updated generation values.
 	grid_manager.generation_recalculated.connect(_on_grid_manager_generation_recalculated)
 	
-	# --- CHANGE: Connect to the definitive game-over signals ---
+	# --- FIX: Connect to the correct, new BlightManager and GridManager signals ---
+	# REASONING: We now listen for the granular progress updates from the BlightManager
+	# to check if the Core tile has been fully consumed. The `all_tiles_blighted` signal
+	# from the GridManager provides the primary game-over condition.
 	grid_manager.all_tiles_blighted.connect(_on_all_tiles_blighted)
-	_blight_manager.tile_blighted.connect(_on_tile_blighted)
+	_blight_manager.blight_progress_updated.connect(_on_blight_progress_updated)
 	
 	# Connect the timer's timeout signal to the main tick function.
 	tick_timer.wait_time = tick_rate
 	tick_timer.timeout.connect(_on_tick_timer_timeout)
 	tick_timer.start()
 
+func _process(delta: float) -> void:
+	# Keep track of time survived for scoring, as long as the game is running.
+	if not _is_game_over:
+		_time_survived += delta
 
 # --- Signal Handlers ---
 
@@ -67,15 +75,17 @@ func _on_tick_timer_timeout() -> void:
 func _on_grid_manager_generation_recalculated(total_generation: Dictionary, _per_tile_generation: Dictionary) -> void:
 	_total_generation = total_generation
 	
-# This handler now ONLY checks for the Core being blighted, as a fail-safe.
-func _on_tile_blighted(pos: Vector2i) -> void:
+# --- NEW: This handler listens for progress updates from the BlightManager. ---
+# It's the new way to check if the Core has been consumed.
+func _on_blight_progress_updated(pos: Vector2i, progress: float) -> void:
 	if _is_game_over:
 		return
 	
-	if is_instance_valid(grid_manager) and pos == grid_manager.core_pos:
-		_end_game("The Core has been blighted.")
+	# If the update is for the Core tile and its progress is 100%, end the game.
+	if is_instance_valid(grid_manager) and pos == grid_manager.core_pos and progress >= 1.0:
+		_end_game("The Core has been consumed by the Blight.")
 
-# --- NEW: This handler listens for the GridManager's definitive signal. ---
+# This handler listens for the GridManager's definitive signal that all other tiles are gone.
 func _on_all_tiles_blighted() -> void:
 	if _is_game_over:
 		return
@@ -91,9 +101,14 @@ func _end_game(reason: String) -> void:
 	
 	# Stop all game timers
 	tick_timer.stop()
+	# REASONING: It's safer to check if the node and its children exist before trying to stop them.
 	if is_instance_valid(_blight_manager):
-		_blight_manager.get_node("SpawnTimer").stop()
-		_blight_manager.get_node("SpreadTimer").stop()
+		if _blight_manager.has_node("ActionTimer"):
+			_blight_manager.get_node("ActionTimer").stop()
+		if _blight_manager.has_node("SpawnScalerTimer"):
+			_blight_manager.get_node("SpawnScalerTimer").stop()
+		if _blight_manager.has_node("SpreadScalerTimer"):
+			_blight_manager.get_node("SpreadScalerTimer").stop()
 	
 	# Calculate score
 	var resource_score = 0.0

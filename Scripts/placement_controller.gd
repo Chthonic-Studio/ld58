@@ -11,7 +11,10 @@ var _selected_tile_data: Tile_Data = null
 
 # --- GODOT ENGINE FUNCTIONS ---
 func _ready() -> void:
-	_grid_manager = get_node("../GridManager")
+	# --- FIX: The path to GridManager was incorrect after refactoring. ---
+	# REASONING: GridManager is now a child of GridContainer. The path must be
+	# updated to reflect this new hierarchy in the scene tree.
+	_grid_manager = get_node("../GridContainer/GridManager")
 	_main_ui = get_node("../MainUI")
 	
 	if not _grid_manager:

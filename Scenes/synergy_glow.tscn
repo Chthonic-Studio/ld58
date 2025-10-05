@@ -1,0 +1,20 @@
+[gd_scene load_steps=5 format=3 uid="uid://cabc123def456"]
+
+[ext_resource type="Shader" uid="uid://bn1snmdf7cly4" path="res://Assets/Shaders/synergy_glow.gdshader" id="1_abcde"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_xyz123"]
+shader = ExtResource("1_abcde")
+shader_parameter/glow_color = Color(0.4, 0.8, 1, 1)
+shader_parameter/pulse_speed = 1.0
+shader_parameter/pulse_width = 0.5
+shader_parameter/intensity = 1.5
+
+[sub_resource type="Gradient" id="Gradient_2rtld"]
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_1nxqb"]
+gradient = SubResource("Gradient_2rtld")
+fill_from = Vector2(1, 0)
+
+[node name="SynergyGlow" type="Sprite2D"]
+material = SubResource("ShaderMaterial_xyz123")
+texture = SubResource("GradientTexture2D_1nxqb")
