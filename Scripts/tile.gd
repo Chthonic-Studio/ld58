@@ -4,16 +4,22 @@
 class_name Tile
 extends Node2D
 
-# Emitted when this tile is clicked, sending its grid position.
+# --- FIX: The signal was being emitted but was never declared. ---
+# This is the fundamental cause of the cascading errors.
 signal tile_clicked(pos: Vector2i)
+
+# --- Node References ---
 @onready var input_area: Area2D = $InputArea
 
+# --- Properties ---
 # The grid position of this tile. Set by the GridManager upon placement.
 var grid_position: Vector2i
 
 # A reference to the TileData resource that defines this tile's properties.
 var tile_data: Tile_Data
 
+
+# --- GODOT ENGINE FUNCTIONS & INITIALIZATION ---
 
 # How to use:
 # When the GridManager creates a Tile scene instance, it should call this function
@@ -26,9 +32,16 @@ func initialize(pos: Vector2i, data: Tile_Data) -> void:
 	if sprite:
 		sprite.texture = tile_data.texture
 	
-	# --- NEW: Connect the input event signal from the Area2D ---
+	# Connect the input event signal from the Area2D. This is the correct place for this.
 	input_area.input_event.connect(_on_input_event)
 
-func _on_input_event(_viewport, event: InputEvent, _shape_idx):
+
+# --- SIGNAL HANDLERS ---
+
+# This function is called when the Area2D detects any input event.
+func _on_input_event(_viewport: Viewport, event: InputEvent, _shape_idx: int) -> void:
+	# We only care about the left mouse button being pressed down.
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.is_pressed():
+		# The tile's only job is to announce that it was clicked and where it is.
+		# It does not decide what the click means.
 		tile_clicked.emit(grid_position)

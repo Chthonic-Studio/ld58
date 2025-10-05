@@ -51,29 +51,42 @@ func _ready() -> void:
 
 # --- SPREAD/SPAWN LOGIC ---
 func _on_spawn_timer_timeout() -> void:
-	# --- CHANGE: This logic is now much more specific ---
-	var valid_targets: Array[Vector2i]
-	var all_placeable_tiles: Array[Vector2i]
+	# --- FIX: Overhaul of the targeting logic for clarity and correctness ---
+	var valid_non_core_targets: Array[Vector2i]
 
+	# First, find all tiles that could possibly be a target.
 	for pos in _grid_manager.grid:
-		# We're interested in all tiles that are not the Core
+		# A valid target must not be the Core, not already blighted, and not protected.
 		if not _grid_manager.grid[pos].tile_data.tags.has(&"core_tile"):
-			all_placeable_tiles.append(pos)
-			# A valid target is a non-core tile that is not yet blighted or protected
 			if not _blighted_cells.has(pos) and not _protected_cells.has(pos):
-				valid_targets.append(pos)
+				valid_non_core_targets.append(pos)
 	
 	var target_pos: Vector2i
-	# If there are still non-core tiles to blight, pick one.
-	if not valid_targets.is_empty():
-		target_pos = valid_targets.pick_random()
-	# Else, if all non-core tiles are blighted, the ONLY target left is the Core.
-	elif all_placeable_tiles.size() == _blighted_cells.size() and _grid_manager.grid.has(_grid_manager.core_pos):
-		target_pos = _grid_manager.core_pos
-	# Otherwise, do nothing.
-	else:
-		return
 	
+	# If we found any valid non-core tiles to attack, proceed.
+	if not valid_non_core_targets.is_empty():
+		# This is where we can prioritize certain tiles, like Polluters.
+		var high_priority_targets: Array[Vector2i]
+		for pos in valid_non_core_targets:
+			if _grid_manager.grid[pos].tile_data.tags.has(&"attracts_blight"):
+				high_priority_targets.append(pos)
+		
+		# If we have high-priority targets, pick one; otherwise, pick any valid target.
+		if not high_priority_targets.is_empty():
+			target_pos = high_priority_targets.pick_random()
+		else:
+			target_pos = valid_non_core_targets.pick_random()
+			
+	# ELSE: If there are NO valid non-core targets left...
+	else:
+		# ...check if the Core itself is still alive. If so, it's the final target.
+		var core_pos = _grid_manager.core_pos
+		if _grid_manager.grid.has(core_pos) and not _blighted_cells.has(core_pos):
+			target_pos = core_pos
+		# If there are no non-core targets AND the core is already blighted or gone, do nothing.
+		else:
+			return
+
 	_blight_cell(target_pos)
 
 

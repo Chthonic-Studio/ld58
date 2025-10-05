@@ -40,3 +40,7 @@ extends Resource
 
 ## A flag to identify if this tile has defensive properties (e.g., against Blight).
 @export var is_defensive: bool = false
+
+# --- FIX: Added the metadata property definition ---
+## A flexible dictionary for storing any extra data a tile might need, such as upgrade paths.
+@export var metadata: Dictionary = {}

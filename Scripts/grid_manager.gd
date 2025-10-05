@@ -62,6 +62,11 @@ func place_tile(pos: Vector2i, tile_data: Tile_Data) -> bool:
 		add_child(tile_instance)
 		tile_instance.position = (pos * cell_size) + (cell_size / 2)
 		tile_instance.initialize(pos, tile_data)
+		
+		# --- FIX: Connect to the newly created tile's click signal ---
+		# The GridManager should listen for clicks on the tiles it creates.
+		tile_instance.tile_clicked.connect(_on_any_tile_clicked)
+		
 		grid[pos].node_instance = tile_instance
 	else:
 		push_warning("GridManager: tile_scene is not set! Cannot create visual tile.")
@@ -227,3 +232,15 @@ func _apply_synergy_rule(output: Dictionary, rule: Dictionary, neighbor_data: Ti
 			for key in output: output[key] *= factor
 		_:
 			pass
+
+# --- NEW SIGNAL HANDLER ---
+# This function is called when ANY tile on the grid is clicked.
+func _on_any_tile_clicked(pos: Vector2i) -> void:
+	# Check if the clicked tile is the Core and attempt to upgrade it.
+	if grid.has(pos) and grid[pos].tile_data.tags.has(&"core_tile"):
+		attempt_upgrade_core(pos)
+	
+	# Future interactions with other tiles could be added here.
+	# For example:
+	# elif grid.has(pos) and grid[pos].tile_data.category == &"some_other_interactive_tile":
+	#     _do_something_else(pos)

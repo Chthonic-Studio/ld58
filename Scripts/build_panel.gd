@@ -34,6 +34,22 @@ func _populate_build_buttons() -> void:
 
 		# For each tile, create a new button.
 		var button := Button.new()
+		
+		# --- FIX: The following logic was missing ---
+		# Configure the button's text to show relevant info.
+		var cost_string = ""
+		for resource in tile_data.cost:
+			cost_string += "%s: %s " % [resource.capitalize(), tile_data.cost[resource]]
+		
+		button.text = "%s\n(%s)" % [tile_data.display_name, cost_string]
+		
+		# Connect the button's pressed signal to our handler, passing the specific tile_data.
+		button.pressed.connect(_on_tile_button_pressed.bind(tile_data))
+		
+		# Add the newly created and configured button to the VBoxContainer.
+		add_child(button)
+
+
 # --- Signal Handlers ---
 
 # This function is called when any of the dynamically created tile buttons are pressed.
