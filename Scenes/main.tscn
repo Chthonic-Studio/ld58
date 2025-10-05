@@ -10,7 +10,9 @@
 
 [node name="Main" type="Node2D"]
 
-[node name="GameManager" parent="." instance=ExtResource("1_jjvhh")]
+[node name="GameManager" parent="." node_paths=PackedStringArray("_blight_manager", "grid_manager") instance=ExtResource("1_jjvhh")]
+_blight_manager = NodePath("../BlightManager")
+grid_manager = NodePath("../GridManager")
 
 [node name="GridManager" parent="." instance=ExtResource("2_kry3j")]
 tile_scene = ExtResource("3_kry3j")
@@ -27,6 +29,5 @@ script = ExtResource("6_21xkr")
 
 [node name="SpreadTimer" type="Timer" parent="BlightManager"]
 
-[node name="Node2D" type="Node2D" parent="." node_paths=PackedStringArray("_grid_manager")]
+[node name="SynergyVisualizer" type="Node2D" parent="."]
 script = ExtResource("7_6bp64")
-_grid_manager = NodePath("../GridManager")
